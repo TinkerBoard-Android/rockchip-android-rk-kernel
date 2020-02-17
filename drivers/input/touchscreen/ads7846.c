@@ -58,6 +58,7 @@
  * files.
  */
 
+#define CA_ENABLE 1
 #define TS_POLL_DELAY	1	/* ms delay before the first sample */
 #define TS_POLL_PERIOD	5	/* ms delay between samples */
 
@@ -91,6 +92,20 @@ struct ads7846_packet {
 	/* for ads7845 with mpc5121 psc spi we use 3-byte buffers */
 	u8			read_x_cmd[3], read_y_cmd[3], pwrdown_cmd[3];
 };
+
+#if CA_ENABLE
+struct ca_data {
+	u16 abs_xmin;
+	u16 abs_xmax;
+	u16 abs_ymin;
+	u16 abs_ymax;
+	u16 xmin;
+	u16 xmax;
+	u16 ymin;
+	u16 ymax;
+	u8  swap;
+};
+#endif
 
 struct ads7846 {
 	struct input_dev	*input;
@@ -144,6 +159,10 @@ struct ads7846 {
 	int			gpio_pendown;
 
 	void			(*wait_for_sync)(void);
+
+#if CA_ENABLE
+	struct ca_data ca;
+#endif
 };
 
 /* leave chip selected when we're done, for quicker re-select? */
@@ -198,6 +217,11 @@ struct ads7846 {
 
 #define	REF_ON	(READ_12BIT_DFR(x, 1, 1))
 #define	REF_OFF	(READ_12BIT_DFR(y, 0, 0))
+
+#if CA_ENABLE
+/* Calibration data:  xmin, xmax, ymin, ymax, swap */
+static u16 ca_800_600_0[5] = {118, 3985, 154, 3936, 0};
+#endif
 
 /* Must be called with ts->lock held */
 static void ads7846_stop(struct ads7846 *ts)
@@ -746,11 +770,41 @@ static void ads7846_read_state(struct ads7846 *ts)
 	}
 }
 
+#if CA_ENABLE
+static u16 calibrate_axis(u16 value, u16 abs_min, u16 abs_max, u16 ca_min, u16 ca_max, u8 swap) {
+	u16 ca_value;
+	u16 abs_width = abs_max - abs_min;
+	u16 ca_width = ca_max - ca_min;
+
+	if (ca_width) {
+		ca_value = (u16) (((abs_width * (value - ca_min)) / ca_width) + abs_min);
+	} else {
+		ca_value = 0;
+		printk("calibrate_axis: Divide by Zero\n");
+		return -1;
+	}
+
+	if (ca_value > abs_max)
+		ca_value = abs_max;
+	if (ca_value < abs_min)
+		ca_value = abs_min;
+
+	if (swap) {
+		ca_value = abs_max - ca_value + abs_min;
+	}
+
+	return ca_value;
+}
+#endif
+
 static void ads7846_report_state(struct ads7846 *ts)
 {
 	struct ads7846_packet *packet = ts->packet;
 	unsigned int Rt;
 	u16 x, y, z1, z2;
+#if CA_ENABLE
+	u16 tmp;
+#endif
 
 	/*
 	 * ads7846_get_value() does in-place conversion (including byte swap)
@@ -834,6 +888,15 @@ static void ads7846_report_state(struct ads7846 *ts)
 			ts->pendown = true;
 			dev_vdbg(&ts->spi->dev, "DOWN\n");
 		}
+
+#if CA_ENABLE
+		tmp = calibrate_axis(x, ts->ca.abs_xmin, ts->ca.abs_xmax, ts->ca.xmin, ts->ca.xmax, ts->ca.swap);
+		if (tmp >= 0)
+			x = tmp;
+		tmp = calibrate_axis(y, ts->ca.abs_ymin, ts->ca.abs_ymax, ts->ca.ymin, ts->ca.ymax, ts->ca.swap);
+		if (tmp >= 0)
+			y = tmp;
+#endif
 
 		input_report_abs(input, ABS_X, x);
 		input_report_abs(input, ABS_Y, y);
@@ -1316,6 +1379,13 @@ static int ads7846_probe(struct spi_device *spi)
 
 	ts->vref_mv = pdata->vref_mv;
 	ts->swap_xy = pdata->swap_xy;
+#if CA_ENABLE
+	ts->ca.xmin = ca_800_600_0[0];
+	ts->ca.xmax = ca_800_600_0[1];
+	ts->ca.ymin = ca_800_600_0[2];
+	ts->ca.ymax = ca_800_600_0[3];
+	ts->ca.swap = ca_800_600_0[4];
+#endif
 
 	if (pdata->filter != NULL) {
 		if (pdata->filter_init != NULL) {
@@ -1348,7 +1418,7 @@ static int ads7846_probe(struct spi_device *spi)
 	ts->wait_for_sync = pdata->wait_for_sync ? : null_wait_for_sync;
 
 	snprintf(ts->phys, sizeof(ts->phys), "%s/input0", dev_name(&spi->dev));
-	snprintf(ts->name, sizeof(ts->name), "ADS%d Touchscreen", ts->model);
+	snprintf(ts->name, sizeof(ts->name), "ads%d", ts->model);
 
 	input_dev->name = ts->name;
 	input_dev->phys = ts->phys;
@@ -1360,10 +1430,20 @@ static int ads7846_probe(struct spi_device *spi)
 			pdata->x_min ? : 0,
 			pdata->x_max ? : MAX_12BIT,
 			0, 0);
+#if CA_ENABLE
+	ts->ca.abs_xmin = pdata->x_min ? : 0;
+	ts->ca.abs_xmax = pdata->x_max ? : MAX_12BIT;
+#endif
+
 	input_set_abs_params(input_dev, ABS_Y,
 			pdata->y_min ? : 0,
 			pdata->y_max ? : MAX_12BIT,
 			0, 0);
+#if CA_ENABLE
+	ts->ca.abs_ymin = pdata->y_min ? : 0;
+	ts->ca.abs_ymax = pdata->y_max ? : MAX_12BIT;
+#endif
+
 	input_set_abs_params(input_dev, ABS_PRESSURE,
 			pdata->pressure_min, pdata->pressure_max, 0, 0);
 
