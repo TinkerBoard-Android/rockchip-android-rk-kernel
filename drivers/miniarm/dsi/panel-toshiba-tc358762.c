@@ -184,7 +184,12 @@ static int tc358762_of_get_native_mode(struct tc358762 *panel)
 	return 1;
 }
 
+extern struct backlight_device * tinker_mcu_get_backlightdev(void);
 extern int tinker_mcu_set_bright(int bright);
+extern int tinker_mcu_screen_power_up(void);
+extern int tinker_mcu_screen_power_off(void);
+extern void tinker_ft5406_start_polling(void);
+
 static int tc358762_disable(struct drm_panel *panel)
 {
 	struct tc358762 *p = to_tc358762(panel);
@@ -192,16 +197,20 @@ static int tc358762_disable(struct drm_panel *panel)
 	if (!p->enabled)
 		return 0;
 
+	printk("panel disable\n");
+
 	if (p->backlight) {
 		p->backlight->props.power = FB_BLANK_POWERDOWN;
 		backlight_update_status(p->backlight);
+	} else {
+		printk("panel disable: no backlight device\n");
+		tinker_mcu_set_bright(0x00);
 	}
 
 	if (p->desc && p->desc->delay.disable)
 		msleep(p->desc->delay.disable);
 
-	printk("panel disable\n");
-	tinker_mcu_set_bright(0x0);
+	tinker_mcu_screen_power_off();
 
 	p->enabled = false;
 
@@ -294,8 +303,6 @@ static int tc358762_prepare(struct drm_panel *panel)
 	return 0;
 }
 
-extern void tinker_mcu_screen_power_up(void);
-extern void tinker_ft5406_start_polling(void);
 static int tc358762_enable(struct drm_panel *panel)
 {
 	struct tc358762 *p = to_tc358762(panel);
@@ -305,10 +312,17 @@ static int tc358762_enable(struct drm_panel *panel)
 
 	printk("panel enable\n");
 
+	if(trigger_bridge) {
 	pr_info("tinker_mcu_screen_power_up");
 	tinker_mcu_screen_power_up();
+
+                /*Some particulare rpi panel need powering on/off during sususpned/resume to avoid
+		 the flicker about 7 seconds */
+                //trigger_bridge = 0;
+
 	msleep(100);
 	tinker_ft5406_start_polling();
+	}
 
 	tc358762_dsi_init(p);
 
@@ -318,9 +332,10 @@ static int tc358762_enable(struct drm_panel *panel)
 	if (p->backlight) {
 		p->backlight->props.power = FB_BLANK_UNBLANK;
 		backlight_update_status(p->backlight);
+	} else {
+		printk("panel enable: no backlight device\n");
+		tinker_mcu_set_bright(0xFF);
 	}
-
-	tinker_mcu_set_bright(0xFF);
 
 	p->enabled = true;
 
@@ -416,6 +431,15 @@ static int tc358762_mipi_probe(struct mipi_dsi_device *dsi, const struct panel_d
 
 		if (!panel->backlight)
 			return -EPROBE_DEFER;
+	} else {
+		panel->backlight =  tinker_mcu_get_backlightdev();
+		if (!panel->backlight) {
+			printk("tc358762_mipi_probe get backlight fail\n");
+			//return -ENODEV;
+		} else {
+			panel->backlight->props.brightness = 255;
+			printk("tc358762_mipi_probe get backligh device successful\n");
+		}
 	}
 
 	ddc = of_parse_phandle(dev->of_node, "ddc-i2c-bus", 0);
@@ -525,21 +549,22 @@ static const struct of_device_id dsi_of_match[] = {
 };
 MODULE_DEVICE_TABLE(of, dsi_of_match);
 
-static int tc358762_dsi_probe(struct mipi_dsi_device *dsi)
+int tc358762_dsi_probe(struct mipi_dsi_device *dsi)
 {
 	const struct bridge_desc *desc;
-	const struct of_device_id *id;
+	//const struct of_device_id *id;
 	const struct panel_desc *pdesc;
 	u32 val;
 	int err;
 
-	id = of_match_node(dsi_of_match, dsi->dev.of_node);
-	if (!id)
-		return -ENODEV;
+	//id = of_match_node(dsi_of_match, dsi->dev.of_node);
+	//if (!id)
+	//	return -ENODEV;
 
-	desc = id->data;
+	//desc = id->data;
+	desc = (struct bridge_desc*) dsi_of_match[0].data;
 
-	printk("find panel: %s\n", id->compatible);
+	printk("find panel: %s\n", dsi_of_match[0].compatible);
 
 	if (desc) {
 		dsi->mode_flags = desc->flags;
@@ -549,7 +574,6 @@ static int tc358762_dsi_probe(struct mipi_dsi_device *dsi)
 	} else {
 		pdesc = NULL;
 	}
-
 	err = tc358762_mipi_probe(dsi, pdesc);
 
 	if (err < 0)
@@ -567,7 +591,7 @@ static int tc358762_dsi_probe(struct mipi_dsi_device *dsi)
 	return mipi_dsi_attach(dsi);
 }
 
-static int tc358762_dsi_remove(struct mipi_dsi_device *dsi)
+int tc358762_dsi_remove(struct mipi_dsi_device *dsi)
 {
 	int err;
 
@@ -578,7 +602,7 @@ static int tc358762_dsi_remove(struct mipi_dsi_device *dsi)
 	return tc358762_remove(&dsi->dev);
 }
 
-static void tc358762_dsi_shutdown(struct mipi_dsi_device *dsi)
+void tc358762_dsi_shutdown(struct mipi_dsi_device *dsi)
 {
 	tc358762_shutdown(&dsi->dev);
 }
