@@ -1973,6 +1973,8 @@ extern void drm_set_preferred_mode(struct drm_connector *connector,
 extern int drm_edid_header_is_valid(const u8 *raw_edid);
 extern bool drm_edid_block_valid(u8 *raw_edid, int block, bool print_bad_edid,
 				 bool *edid_corrupt);
+extern bool drm_dect_eve_vgg804838_edid(struct edid *edid);
+extern bool detect_eve_vgg804838_panel(void);
 extern bool drm_edid_is_valid(struct edid *edid);
 
 extern struct drm_tile_group *drm_mode_create_tile_group(struct drm_device *dev,
