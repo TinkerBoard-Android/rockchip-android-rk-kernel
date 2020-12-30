@@ -6,10 +6,6 @@
 #define LOG_ERR(fmt,arg...) pr_err("tinker-ft5406: %s: "fmt, __func__, ##arg);
 
 #define RETRY_COUNT 10
-#define XY_REVERSE 1
-
-#define SCREEN_WIDTH	800
-#define SCREEN_HEIGHT	480
 
 #define FT_ONE_TCH_LEN	6
 
@@ -41,6 +37,8 @@
 #define FT_TOUCH_DOWN		0
 #define FT_TOUCH_CONTACT	2
 
+#define FT_INPUT_NAME "fts_ts"
+
 struct ts_event {
 	u16 au16_x[MAX_TOUCH_POINTS]; /*x coordinate */
 	u16 au16_y[MAX_TOUCH_POINTS]; /*y coordinate */
@@ -58,6 +56,9 @@ struct tinker_ft5406_data {
 	struct ts_event event;
 	struct work_struct ft5406_work;
 
+	int screen_width;
+	int screen_height;
+	int xy_reverse;
 	int is_polling;
 	int known_ids;
 	int retry_count;
