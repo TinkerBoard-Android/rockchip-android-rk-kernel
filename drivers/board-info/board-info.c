@@ -32,6 +32,7 @@
 int project_id_0, project_id_1, project_id_2;
 int ram_id_0, ram_id_1, ram_id_2;
 int pcb_id_0, pcb_id_1, pcb_id_2;
+int projectid;
 
 void *regs;
 int err;
@@ -40,6 +41,7 @@ char *board_type = "Unknown Board type";
 char *ram_size = "Unknown RAM size";
 char *pcb = "Unknown PCB";
 
+static struct proc_dir_entry *board_info_proc_file;
 static struct proc_dir_entry *project_id_proc_file;
 
 static void read_project_id(void)
@@ -94,12 +96,18 @@ static void read_project_id(void)
 		board_type = "Tinker Board S";
 	else if (project_id_2 == 0 && project_id_1 == 0 && project_id_0 == 1)
 		board_type = "Tinker Board S/HV";
+	else if (project_id_2 == 0 && project_id_1 == 1 && project_id_0 == 0)
+		board_type = "Tinker Board S";
+	else if (project_id_2 == 0 && project_id_1 == 1 && project_id_0 == 1)
+		board_type = "Tinker Board R2";
 	else if (project_id_2 == 1 && project_id_1 == 0 && project_id_0 == 0)
 		board_type = "Tinker R/BR";
 	else if (project_id_2 == 1 && project_id_1 == 1 && project_id_0 == 1)
 		board_type = "Tinker Board";
 	else
 		board_type = "unknown board name";
+
+	projectid = (project_id_2 << 2) + (project_id_1 << 1) + project_id_0;
 }
 
 static void read_ram_id(void)
@@ -227,11 +235,27 @@ static int board_info_proc_read(struct seq_file *buf, void *v)
 	return 0;
 }
 
-static int project_id_proc_open(struct inode *inode, struct  file *file)
+static int project_id_proc_read(struct seq_file *buf, void *v)
+{
+	seq_printf(buf, "%d\n", projectid);
+	return 0;
+}
+
+static int board_info_proc_open(struct inode *inode, struct  file *file)
 {
 	return single_open(file, board_info_proc_read, NULL);
 }
 
+static int project_id_proc_open(struct inode *inode, struct  file *file)
+{
+	return single_open(file, project_id_proc_read, NULL);
+}
+
+static struct file_operations board_info_proc_ops = {
+	.open = board_info_proc_open,
+	.read = seq_read,
+	.release = single_release,
+};
 
 static struct file_operations project_id_proc_ops = {
 	.open = project_id_proc_open,
@@ -241,12 +265,20 @@ static struct file_operations project_id_proc_ops = {
 
 static void create_project_id_proc_file(void)
 {
-	project_id_proc_file = proc_create("board_info", 0444, NULL,
-						&project_id_proc_ops);
-	if (project_id_proc_file) {
+	board_info_proc_file = proc_create("board_info", 0444, NULL,
+						&board_info_proc_ops);
+	if (board_info_proc_file) {
 		printk("[board_info] create Board_info_proc_file sucessed!\n");
 	} else {
 		printk("[board_info] create Board_info_proc_file failed!\n");
+	}
+
+	project_id_proc_file = proc_create("projectid", 0444, NULL,
+						&project_id_proc_ops);
+	if (project_id_proc_file) {
+		printk("[board_info] create ProjectID_proc_file sucessed!\n");
+	} else {
+		printk("[board_info] create ProjectID_proc_file failed!\n");
 	}
 
 	/* Pull up GPIO2 A1 A2 A3*/
