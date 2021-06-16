@@ -37,12 +37,14 @@ int projectid;
 void *regs;
 int err;
 
-char *board_type = "Unknown Board type";
-char *ram_size = "Unknown RAM size";
-char *pcb = "Unknown PCB";
+char *board_type = "unknown";
+char *ram_size = "unknown";
+char *pcb = "unknown";
 
 static struct proc_dir_entry *board_info_proc_file;
 static struct proc_dir_entry *project_id_proc_file;
+static struct proc_dir_entry *board_ver_proc_file;
+static struct proc_dir_entry *board_ddr_proc_file;
 
 static void read_project_id(void)
 {
@@ -105,7 +107,7 @@ static void read_project_id(void)
 	else if (project_id_2 == 1 && project_id_1 == 1 && project_id_0 == 1)
 		board_type = "Tinker Board";
 	else
-		board_type = "unknown board name";
+		board_type = "unknown";
 
 	projectid = (project_id_2 << 2) + (project_id_1 << 1) + project_id_0;
 }
@@ -159,13 +161,13 @@ static void read_ram_id(void)
 		ram_id_2, ram_id_1, ram_id_0);
 
 	if (ram_id_2 == 0 && ram_id_1 == 0 && ram_id_0 == 0)
-		ram_size = "4 GB";
+		ram_size = "4GB";
 	else if (ram_id_2 == 0 && ram_id_1 == 1 && ram_id_0 == 0)
-		ram_size = "2 GB";
+		ram_size = "2GB";
 	else if (ram_id_2 == 1 && ram_id_1 == 0 && ram_id_0 == 0)
-		ram_size = "1 GB";
+		ram_size = "1GB";
 	else
-		ram_size = "unknown ram";
+		ram_size = "unknown";
 }
 
 static void read_pcb_id(void)
@@ -217,13 +219,15 @@ static void read_pcb_id(void)
 		pcb_id_2, pcb_id_1, pcb_id_0);
 
 	if (pcb_id_2 == 0 && pcb_id_1 == 0 && pcb_id_0 == 0)
-		pcb = "SR";
+		pcb = "1.00";	//SR
 	else if (pcb_id_2 == 0 && pcb_id_1 == 0 && pcb_id_0 == 1)
-		pcb = "ER";
+		pcb = "1.01";	//ER
 	else if (pcb_id_2 == 0 && pcb_id_1 == 1 && pcb_id_0 == 0)
-		pcb = "PR";
+		pcb = "1.02";	//PR
+	else if (pcb_id_2 == 0 && pcb_id_1 == 1 && pcb_id_0 == 1)
+		pcb = "1.03";   //Tinker Board R2
 	else
-		pcb = "unknown pcb";
+		pcb = "unknown";
 }
 
 static int board_info_proc_read(struct seq_file *buf, void *v)
@@ -241,6 +245,18 @@ static int project_id_proc_read(struct seq_file *buf, void *v)
 	return 0;
 }
 
+static int board_ver_proc_read(struct seq_file *buf, void *v)
+{
+	seq_printf(buf, "%s\n", pcb);
+	return 0;
+}
+
+static int board_ddr_proc_read(struct seq_file *buf, void *v)
+{
+	seq_printf(buf, "%s\n", ram_size);
+	return 0;
+}
+
 static int board_info_proc_open(struct inode *inode, struct  file *file)
 {
 	return single_open(file, board_info_proc_read, NULL);
@@ -249,6 +265,16 @@ static int board_info_proc_open(struct inode *inode, struct  file *file)
 static int project_id_proc_open(struct inode *inode, struct  file *file)
 {
 	return single_open(file, project_id_proc_read, NULL);
+}
+
+static int board_ver_proc_open(struct inode *inode, struct  file *file)
+{
+	return single_open(file, board_ver_proc_read, NULL);
+}
+
+static int board_ddr_proc_open(struct inode *inode, struct  file *file)
+{
+	return single_open(file, board_ddr_proc_read, NULL);
 }
 
 static struct file_operations board_info_proc_ops = {
@@ -263,9 +289,21 @@ static struct file_operations project_id_proc_ops = {
 	.release = single_release,
 };
 
+static struct file_operations board_ver_proc_ops = {
+	.open = board_ver_proc_open,
+	.read = seq_read,
+	.release = single_release,
+};
+
+static struct file_operations board_ddr_proc_ops = {
+	.open = board_ddr_proc_open,
+	.read = seq_read,
+	.release = single_release,
+};
+
 static void create_project_id_proc_file(void)
 {
-	board_info_proc_file = proc_create("board_info", 0444, NULL,
+	board_info_proc_file = proc_create("boardinfo", 0444, NULL,
 						&board_info_proc_ops);
 	if (board_info_proc_file) {
 		printk("[board_info] create Board_info_proc_file sucessed!\n");
@@ -279,6 +317,22 @@ static void create_project_id_proc_file(void)
 		printk("[board_info] create ProjectID_proc_file sucessed!\n");
 	} else {
 		printk("[board_info] create ProjectID_proc_file failed!\n");
+	}
+
+	board_ver_proc_file = proc_create("boardver", 0444, NULL,
+						&board_ver_proc_ops);
+	if (board_ver_proc_file) {
+		printk("[board_info] create Board_ver_proc_file sucessed!\n");
+	} else {
+		printk("[board_info] create Board_ver_proc_file failed!\n");
+	}
+
+	board_ddr_proc_file = proc_create("ddr", 0444, NULL,
+						&board_ddr_proc_ops);
+	if (board_ddr_proc_file) {
+		printk("[board_info] create Board_ddr_proc_file sucessed!\n");
+	} else {
+		printk("[board_info] create Board_ddr_proc_file failed!\n");
 	}
 
 	/* Pull up GPIO2 A1 A2 A3*/
