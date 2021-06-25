@@ -32,7 +32,7 @@
 int project_id_0, project_id_1, project_id_2;
 int ram_id_0, ram_id_1, ram_id_2;
 int pcb_id_0, pcb_id_1, pcb_id_2;
-int projectid;
+int projectid, boardid;
 
 void *regs;
 int err;
@@ -42,6 +42,7 @@ char *ram_size = "unknown";
 char *pcb = "unknown";
 
 static struct proc_dir_entry *board_info_proc_file;
+static struct proc_dir_entry *board_id_proc_file;
 static struct proc_dir_entry *project_id_proc_file;
 static struct proc_dir_entry *board_ver_proc_file;
 static struct proc_dir_entry *board_ddr_proc_file;
@@ -228,6 +229,8 @@ static void read_pcb_id(void)
 		pcb = "1.03";   //Tinker Board R2
 	else
 		pcb = "unknown";
+
+	boardid = (pcb_id_2 << 2) + (pcb_id_1 << 1) + pcb_id_0;
 }
 
 static int board_info_proc_read(struct seq_file *buf, void *v)
@@ -236,6 +239,12 @@ static int board_info_proc_read(struct seq_file *buf, void *v)
 	seq_printf(buf, "%s\n", board_type);
 	//printk("[board_info] %s board_type=\'%s\' ram_size=\'%s' pcb=\'%s\'\n",
 	//	__func__, board_type, ram_size, pcb);
+	return 0;
+}
+
+static int board_id_proc_read(struct seq_file *buf, void *v)
+{
+	seq_printf(buf, "%d\n", boardid);
 	return 0;
 }
 
@@ -262,6 +271,11 @@ static int board_info_proc_open(struct inode *inode, struct  file *file)
 	return single_open(file, board_info_proc_read, NULL);
 }
 
+static int board_id_proc_open(struct inode *inode, struct  file *file)
+{
+	return single_open(file, board_id_proc_read, NULL);
+}
+
 static int project_id_proc_open(struct inode *inode, struct  file *file)
 {
 	return single_open(file, project_id_proc_read, NULL);
@@ -279,6 +293,12 @@ static int board_ddr_proc_open(struct inode *inode, struct  file *file)
 
 static struct file_operations board_info_proc_ops = {
 	.open = board_info_proc_open,
+	.read = seq_read,
+	.release = single_release,
+};
+
+static struct file_operations board_id_proc_ops = {
+	.open = board_id_proc_open,
 	.read = seq_read,
 	.release = single_release,
 };
@@ -309,6 +329,14 @@ static void create_project_id_proc_file(void)
 		printk("[board_info] create Board_info_proc_file sucessed!\n");
 	} else {
 		printk("[board_info] create Board_info_proc_file failed!\n");
+	}
+
+	board_id_proc_file = proc_create("boardid", 0444, NULL,
+						&board_id_proc_ops);
+	if (board_id_proc_file) {
+		printk("[board_info] create BoardID_proc_file sucessed!\n");
+	} else {
+		printk("[board_info] create BoardID_proc_file failed!\n");
 	}
 
 	project_id_proc_file = proc_create("projectid", 0444, NULL,
