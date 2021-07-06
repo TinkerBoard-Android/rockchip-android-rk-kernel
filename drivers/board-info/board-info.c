@@ -95,21 +95,6 @@ static void read_project_id(void)
 	printk("project_id_2:0x%x, project_id_1:0x%x, project_id_0:0x%x \n",
 		project_id_2, project_id_1, project_id_0);
 
-	if (project_id_2 == 0 && project_id_1 == 0 && project_id_0 == 0)
-		board_type = "Tinker Board S";
-	else if (project_id_2 == 0 && project_id_1 == 0 && project_id_0 == 1)
-		board_type = "Tinker Board S/HV";
-	else if (project_id_2 == 0 && project_id_1 == 1 && project_id_0 == 0)
-		board_type = "Tinker Board S";
-	else if (project_id_2 == 0 && project_id_1 == 1 && project_id_0 == 1)
-		board_type = "Tinker Board R2";
-	else if (project_id_2 == 1 && project_id_1 == 0 && project_id_0 == 0)
-		board_type = "Tinker R/BR";
-	else if (project_id_2 == 1 && project_id_1 == 1 && project_id_0 == 1)
-		board_type = "Tinker Board";
-	else
-		board_type = "unknown";
-
 	projectid = (project_id_2 << 2) + (project_id_1 << 1) + project_id_0;
 }
 
@@ -219,18 +204,57 @@ static void read_pcb_id(void)
 	printk("pcb_id_2:0x%x, pcb_id_1:0x%x, pcb_id_0:0x%x \n",
 		pcb_id_2, pcb_id_1, pcb_id_0);
 
-	if (pcb_id_2 == 0 && pcb_id_1 == 0 && pcb_id_0 == 0)
-		pcb = "1.00";	//SR
-	else if (pcb_id_2 == 0 && pcb_id_1 == 0 && pcb_id_0 == 1)
-		pcb = "1.01";	//ER
-	else if (pcb_id_2 == 0 && pcb_id_1 == 1 && pcb_id_0 == 0)
-		pcb = "1.02";	//PR
-	else if (pcb_id_2 == 0 && pcb_id_1 == 1 && pcb_id_0 == 1)
-		pcb = "1.03";   //Tinker Board R2
+	boardid = (pcb_id_2 << 2) + (pcb_id_1 << 1) + pcb_id_0;
+}
+
+static void set_info_ver(void)
+{
+	if (boardid == 0) {
+		if (projectid == 7)
+			pcb = "1.0";
+		else
+			pcb = "0.99";
+	} else if (boardid == 1) {
+		if (projectid == 7)
+			pcb = "1.1";
+		else
+			pcb = "1.00";
+	} else if (boardid == 2) {
+		if (projectid == 7)
+			pcb = "1.2";
+		else
+			pcb = "1.01";
+	} else if (boardid == 3)
+		pcb = "2.00";
+	else if (boardid == 4)
+		pcb = "2.01A";
+	else if (boardid == 5)
+		pcb = "2.01B";
 	else
 		pcb = "unknown";
 
-	boardid = (pcb_id_2 << 2) + (pcb_id_1 << 1) + pcb_id_0;
+	if (projectid == 0) {
+		if (boardid < 3)
+			board_type = "Tinker Board S";
+		else
+			board_type = "Tinker Board S R2";
+	} else if (projectid == 1)
+		board_type = "Tinker Board S/HV";
+	else if (projectid == 2)
+		board_type = "Tinker Board S";
+	else if (projectid == 3)
+		board_type = "Tinker Board (S) R2 SR";
+	else if (projectid == 4)
+		board_type = "Tinker R/BR";
+	else if (projectid == 5)
+		board_type = "Tinker R/BR";
+	else if (projectid == 7) {
+		if (boardid < 3)
+			board_type = "Tinker Board";
+		else
+			board_type = "Tinker Board R2";
+	} else
+		board_type = "unknown";
 }
 
 static int board_info_proc_read(struct seq_file *buf, void *v)
@@ -379,6 +403,9 @@ static void create_project_id_proc_file(void)
 	read_project_id();
 	read_ram_id();
 	read_pcb_id();
+
+	/* Set boardinfo and boardver */
+	set_info_ver();
 }
 
 static int __init proc_asusPRJ_init(void)
