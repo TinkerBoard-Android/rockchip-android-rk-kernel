@@ -237,13 +237,13 @@ static void set_info_ver(void)
 		if (boardid < 3)
 			board_type = "Tinker Board S";
 		else
-			board_type = "Tinker Board S R2";
+			board_type = "Tinker Board S R2.0";
 	} else if (projectid == 1)
 		board_type = "Tinker Board S/HV";
 	else if (projectid == 2)
 		board_type = "Tinker Board S";
 	else if (projectid == 3)
-		board_type = "Tinker Board (S) R2 SR";
+		board_type = "Tinker Board (S) R2.0 SR";
 	else if (projectid == 4)
 		board_type = "Tinker R/BR";
 	else if (projectid == 5)
@@ -252,7 +252,7 @@ static void set_info_ver(void)
 		if (boardid < 3)
 			board_type = "Tinker Board";
 		else
-			board_type = "Tinker Board R2";
+			board_type = "Tinker Board R2.0";
 	} else
 		board_type = "unknown";
 }
