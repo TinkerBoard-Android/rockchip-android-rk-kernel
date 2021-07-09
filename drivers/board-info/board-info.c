@@ -408,6 +408,18 @@ static void create_project_id_proc_file(void)
 	set_info_ver();
 }
 
+int get_board_id(void)
+{
+	return boardid;
+}
+EXPORT_SYMBOL_GPL(get_board_id);
+
+int get_project_id(void)
+{
+	return projectid;
+}
+EXPORT_SYMBOL_GPL(get_project_id);
+
 static int __init proc_asusPRJ_init(void)
 {
 	create_project_id_proc_file();
