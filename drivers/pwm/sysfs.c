@@ -279,6 +279,7 @@ static int pwm_export_child(struct device *parent, struct pwm_device *pwm)
 
 	pwm_prop[0] = kasprintf(GFP_KERNEL, "EXPORT=pwm%u", pwm->hwpwm);
 	pwm_prop[1] = NULL;
+
 	kobject_uevent_env(&parent->kobj, KOBJ_CHANGE, pwm_prop);
 	kfree(pwm_prop[0]);
 
@@ -304,6 +305,7 @@ static int pwm_unexport_child(struct device *parent, struct pwm_device *pwm)
 
 	pwm_prop[0] = kasprintf(GFP_KERNEL, "UNEXPORT=pwm%u", pwm->hwpwm);
 	pwm_prop[1] = NULL;
+
 	kobject_uevent_env(&parent->kobj, KOBJ_CHANGE, pwm_prop);
 	kfree(pwm_prop[0]);
 

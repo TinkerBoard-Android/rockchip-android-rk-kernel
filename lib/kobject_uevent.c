@@ -166,7 +166,7 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
 {
 	struct kobj_uevent_env *env;
 	const char *action_string = kobject_actions[action];
-	const char *devpath = NULL;
+	char *devpath = NULL;
 	const char *subsystem;
 	struct kobject *top_kobj;
 	struct kset *kset;
@@ -176,6 +176,7 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
 #ifdef CONFIG_NET
 	struct uevent_sock *ue_sk;
 #endif
+	char *ret = NULL;
 
 	pr_debug("kobject: '%s' (%p): %s\n",
 		 kobject_name(kobj), kobj, __func__);
@@ -189,6 +190,7 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
 		pr_debug("kobject: '%s' (%p): %s: attempted to send uevent "
 			 "without kset!\n", kobject_name(kobj), kobj,
 			 __func__);
+
 		return -EINVAL;
 	}
 
@@ -200,6 +202,7 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
 		pr_debug("kobject: '%s' (%p): %s: uevent_suppress "
 				 "caused the event to drop!\n",
 				 kobject_name(kobj), kobj, __func__);
+
 		return 0;
 	}
 	/* skip the event, if the filter returns zero. */
@@ -208,6 +211,7 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
 			pr_debug("kobject: '%s' (%p): %s: filter function "
 				 "caused the event to drop!\n",
 				 kobject_name(kobj), kobj, __func__);
+
 			return 0;
 		}
 
@@ -216,10 +220,12 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
 		subsystem = uevent_ops->name(kset, kobj);
 	else
 		subsystem = kobject_name(&kset->kobj);
+
 	if (!subsystem) {
 		pr_debug("kobject: '%s' (%p): %s: unset subsystem caused the "
 			 "event to drop!\n", kobject_name(kobj), kobj,
 			 __func__);
+
 		return 0;
 	}
 
@@ -250,6 +256,18 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
 		goto exit;
 	}
 
+	/* keys passed in from the caller */
+	if (envp_ext) {
+		for (i = 0; envp_ext[i]; i++) {
+			ret = strstr(envp_ext[i], "pwm0");
+			if (ret) {
+				pr_debug("kobject: envp_ext: '%d' '%s'\n", i, ret);
+				sprintf(devpath, "%s/%s", devpath, ret);
+				pr_debug("kobject: devpath: '%s'\n", devpath);
+			}
+		}
+	}
+
 	/* default keys */
 	retval = add_uevent_var(env, "ACTION=%s", action_string);
 	if (retval)
@@ -277,6 +295,7 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
 			pr_debug("kobject: '%s' (%p): %s: uevent() returned "
 				 "%d\n", kobject_name(kobj), kobj,
 				 __func__, retval);
+
 			goto exit;
 		}
 	}
@@ -325,6 +344,8 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
 				len = strlen(env->envp[i]) + 1;
 				scratch = skb_put(skb, len);
 				strcpy(scratch, env->envp[i]);
+				if (!strcmp(subsystem, "pwm"))
+					pr_debug("kobject: scratch: %s\n", scratch);
 			}
 
 			NETLINK_CB(skb).dst_group = 1;
@@ -421,6 +442,7 @@ int add_uevent_var(struct kobj_uevent_env *env, const char *format, ...)
 
 	env->envp[env->envp_idx++] = &env->buf[env->buflen];
 	env->buflen += len + 1;
+
 	return 0;
 }
 EXPORT_SYMBOL_GPL(add_uevent_var);
