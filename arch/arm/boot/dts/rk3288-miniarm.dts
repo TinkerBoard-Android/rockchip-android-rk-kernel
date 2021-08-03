@@ -408,15 +408,6 @@
 	};
 };
 
-&i2c2 {
-	status = "okay";
-
-	m24c08@50 {
-		compatible = "at,24c08";
-		reg = <0x50>;
-	};
-};
-
 &i2c1 {
 	status = "okay";
 
@@ -431,6 +422,15 @@
 		compatible = "maxim,ds3231";
 		reg = <0x68>;
 		status = "okay";
+	};
+};
+
+&i2c2 {
+	status = "okay";
+
+	m24c08@50 {
+		compatible = "at,24c08";
+		reg = <0x50>;
 	};
 };
 
@@ -456,6 +456,25 @@
 
 &i2c4 {
 	status = "okay";
+};
+
+&spi0 {
+	status = "okay";
+	max-freq = <50000000>;
+
+	spidev@0 {
+		compatible = "rockchip,spi_tinker";
+		reg = <0>;
+		spi-max-frequency = <50000000>;
+		spi-cpha = <1>;
+	};
+
+	spidev@1 {
+		compatible = "rockchip,spi_tinker";
+		reg = <1>;
+		spi-max-frequency = <50000000>;
+		spi-cpha = <1>;
+	};
 };
 
 &spi2 {
