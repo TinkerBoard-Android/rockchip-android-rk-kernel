@@ -227,9 +227,9 @@ static void set_info_ver(void)
 	} else if (boardid == 3)
 		pcb = "2.00";
 	else if (boardid == 4)
-		pcb = "2.03A";
+		pcb = "2.04A";
 	else if (boardid == 5)
-		pcb = "2.03B";
+		pcb = "2.04B";
 	else
 		pcb = "unknown";
 
