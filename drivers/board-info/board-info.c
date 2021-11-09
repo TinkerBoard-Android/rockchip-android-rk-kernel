@@ -235,13 +235,13 @@ static void set_info_ver(void)
 
 	if (projectid == 0) {
 		if (boardid < 3)
-			board_type = "Tinker Board S";
+			board_type = "Tinker Board S, Tinker S/BR";
 		else
 			board_type = "Tinker Board S R2.0";
 	} else if (projectid == 1)
 		board_type = "Tinker Board S/HV";
 	else if (projectid == 2)
-		board_type = "Tinker Board S";
+		board_type = "Tinker Board S R1.5, Tinker S R1.5";
 	else if (projectid == 3)
 		board_type = "Tinker Board (S) R2.0 SR";
 	else if (projectid == 4)
