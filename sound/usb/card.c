@@ -386,9 +386,12 @@ static int snd_usb_audio_create(struct usb_interface *intf,
 	}
 
 #ifdef TINKER_AUDIO
-	if (le16_to_cpu(dev->descriptor.idVendor) == 0x0bda && le16_to_cpu(dev->descriptor.idProduct) == 0x481a) {
-		err = snd_card_new(&intf->dev, USB_AUDIO_ONBOARD_CARD_IDX, id[idx], THIS_MODULE, 0, &card);
-		snd_printk(KERN_INFO "onboard usb card\n");
+	if (le16_to_cpu(dev->descriptor.idVendor) == 0x0bda) {
+		if ((le16_to_cpu(dev->descriptor.idProduct) == 0x481a) || (le16_to_cpu(dev->descriptor.idProduct) == 0x49f6)
+		 || (le16_to_cpu(dev->descriptor.idProduct) == 0x4030) || (le16_to_cpu(dev->descriptor.idProduct) == 0x4040)) {
+			err = snd_card_new(&intf->dev, USB_AUDIO_ONBOARD_CARD_IDX, id[idx], THIS_MODULE, 0, &card);
+			snd_printk(KERN_INFO "onboard usb card\n");
+		}
 	} else {
                 int ret = 0;
                 char cmd_path[] = "/system/bin/sh";
