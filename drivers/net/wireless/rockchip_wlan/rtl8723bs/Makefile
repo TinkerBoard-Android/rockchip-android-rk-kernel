@@ -1414,7 +1414,7 @@ EXTRA_CFLAGS += -DRTW_SUPPORT_PLATFORM_SHUTDOWN
 ARCH := arm
 CROSS_COMPILE := /home/android_sdk/Rockchip/Rk3188/prebuilts/gcc/linux-x86/arm/arm-eabi-4.6/bin/arm-eabi-
 KSRC := /home/android_sdk/Rockchip/Rk3188/kernel
-MODULE_NAME := wlan
+MODULE_NAME := 8723bs
 endif
 
 ifeq ($(CONFIG_PLATFORM_ARM_RK3066), y)
