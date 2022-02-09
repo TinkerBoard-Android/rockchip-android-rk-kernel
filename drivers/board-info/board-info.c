@@ -230,6 +230,8 @@ static void set_info_ver(void)
 		pcb = "2.04A";
 	else if (boardid == 5)
 		pcb = "2.04B";
+	else if (boardid == 6)
+		pcb = "2.04C";
 	else
 		pcb = "unknown";
 
