@@ -1977,6 +1977,8 @@ extern bool drm_dect_eve_vgg804838_edid(struct edid *edid);
 extern bool detect_eve_vgg804838_panel(void);
 extern bool drm_dect_dwe2100_edid(struct edid *edid);
 extern bool detect_dwe2100_panel(void);
+extern bool drm_dect_eyeclick_epson_pj_edid(struct edid *edid);
+extern bool detect_eyeclick_epson_pj(void);
 extern bool drm_edid_is_valid(struct edid *edid);
 
 extern struct drm_tile_group *drm_mode_create_tile_group(struct drm_device *dev,

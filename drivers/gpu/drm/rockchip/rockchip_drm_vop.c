@@ -2116,9 +2116,11 @@ vop_crtc_mode_valid(struct drm_crtc *crtc, const struct drm_display_mode *mode,
 	int clock;
 	bool eve_vgg804838_panel = false;
 	bool dwe2100_panel = false;
+	bool eyeclick_epson_pj = false;
 
 	eve_vgg804838_panel = detect_eve_vgg804838_panel();
 	dwe2100_panel = detect_dwe2100_panel();
+	eyeclick_epson_pj = detect_eyeclick_epson_pj();
 
 	if (mode->hdisplay == 3840 && mode->vdisplay == 2160) {
 		if (mode->clock >= 300000 || mode->clock < 290000) {
@@ -2155,7 +2157,8 @@ vop_crtc_mode_valid(struct drm_crtc *crtc, const struct drm_display_mode *mode,
 	if (output_type == DRM_MODE_CONNECTOR_HDMIA ||
 	    output_type == DRM_MODE_CONNECTOR_DisplayPort)
 		if (clock != request_clock) {
-			if((request_clock == 33260 && eve_vgg804838_panel) || (request_clock == 33900 && dwe2100_panel)) {
+			if((request_clock == 33260 && eve_vgg804838_panel) || (request_clock == 33900 && dwe2100_panel) 
+				 || (request_clock == 83500 && eyeclick_epson_pj)) {
 				pr_err("%s: don't block pixel clock %d KHz", __func__, request_clock);
 				return MODE_OK;
 			}

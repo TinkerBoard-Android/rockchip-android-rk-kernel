@@ -56,6 +56,7 @@
  */
 static bool drm_eve_vgg804838_panel = false;
 static bool drm_dwe2100_panel = false;
+static bool drm_eyeclick_epson_pj = false;
 
 static bool drm_kms_helper_poll = true;
 module_param_named(poll, drm_kms_helper_poll, bool, 0600);
@@ -236,6 +237,7 @@ static int drm_helper_probe_single_connector_modes_merge_bits(struct drm_connect
 			edid_manufacturer = (struct edid *) connector->edid_blob_ptr->data;
 			drm_eve_vgg804838_panel = drm_dect_eve_vgg804838_edid(edid_manufacturer);
 			drm_dwe2100_panel = drm_dect_dwe2100_edid(edid_manufacturer);
+			drm_eyeclick_epson_pj = drm_dect_eyeclick_epson_pj_edid(edid_manufacturer);
 		}
 	}
 
@@ -289,6 +291,12 @@ bool detect_dwe2100_panel (void)
 	return drm_dwe2100_panel;
 }
 EXPORT_SYMBOL(detect_dwe2100_panel);
+
+bool detect_eyeclick_epson_pj (void)
+{
+	return drm_eyeclick_epson_pj;
+}
+EXPORT_SYMBOL(detect_eyeclick_epson_pj);
 
 /**
  * drm_helper_probe_single_connector_modes - get complete set of display modes
